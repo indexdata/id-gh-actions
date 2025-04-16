@@ -26,12 +26,15 @@ runs:
           node-version: ${{ inputs.node-version }} 
 
       - name: Install Yarn
+        shell: bash
         run: npm install -g yarn
 
       - name: Add FOLIO registry to yarn
+        shell: bash
         run: yarn config set @folio:registry https://repository.folio.org/repository/npm-folio/
 
       - name: Do yarn install
+        shell: bash
         run: yarn install
 
       - name: Upload yarn.lock
@@ -41,14 +44,17 @@ runs:
           path: ./yarn.lock
 
       - name: run build scripts
+        shell: bash
         run: |
 
       - name: Run stripes build
+        shell: bash
         if: ${{ github.event.inputs.reshare-transpile == 'false' }}
         run: |
           yarn build output --okapi ${{ inputs.okapi }} --tenant ${{ inputs.tenant }} && mv output ${{ inputs.tenant }}
 
       - name: Run stripes build with reshare transpile tokens set
+        shell: bash
         if: ${{ github.event.inputs.reshare-transpile == 'true' }}
         run: |
           STRIPES_TRANSPILE_TOKENS=@k-int yarn build output --okapi ${{ inputs.okapi }} --tenant ${{ inputs.tenant }} && mv output ${{ inputs.tenant }}
