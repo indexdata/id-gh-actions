@@ -1,5 +1,5 @@
-name: enable modules for tenant
-description: enable modules for tenant
+name: Build a webpack with yarn
+description: Builds a webpack
 
 inputs:
   okapi:
