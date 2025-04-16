@@ -11,6 +11,7 @@ inputs:
   reshare-transpile:
     description: use special reshare transpile invocation
     required: false
+    type: boolean
     default: false
   node-version:
     description: version of node to set up
@@ -20,23 +21,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Ensure dependencies are installed
-      shell: bash
-      run: |
-        if ! command -v http &> /dev/null; then
-          echo "Installing httpie..."
-          pip install httpie
-        else
-          echo "httpie already installed"
-        fi
-
-        if ! command -v jq &> /dev/null; then
-          echo "Installing jq..."
-          sudo apt-get update && sudo apt-get install -y jq
-        else
-          echo "jq already installed"
-        fi
-
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ inputs.node-version }} 
@@ -46,3 +30,25 @@ runs:
 
       - name: Add FOLIO registry to yarn
         run: yarn config set @folio:registry https://repository.folio.org/repository/npm-folio/
+
+      - name: Do yarn install
+        run: yarn install
+
+      - name: Upload yarn.lock
+        uses: actions/upload-artifact@v4
+        with:
+          name: yarn.lock
+          path: ./yarn.lock
+
+      - name: run build scripts
+        run: |
+
+      - name: Run stripes build
+        if: ${{ github.event.inputs.reshare-transpile == 'false' }}
+        run: |
+          yarn build output --okapi ${{ inputs.okapi }} --tenant ${{ inputs.tenant }} && mv output ${{ inputs.tenant }}
+
+      - name: Run stripes build with reshare transpile tokens set
+        if: ${{ github.event.inputs.reshare-transpile == 'true' }}
+        run: |
+          STRIPES_TRANSPILE_TOKENS=@k-int yarn build output --okapi ${{ inputs.okapi }} --tenant ${{ inputs.tenant }} && mv output ${{ inputs.tenant }}
