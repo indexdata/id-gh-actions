@@ -1,0 +1,74 @@
+name: Okapi Auth
+description: Authenticate to Okapi and export the token
+
+inputs:
+  username:
+    description: Username to authenticate with, defaults to okapi_admin
+    default: okapi_admin
+    required: false
+  password:
+    description: password to authenticate with
+    required: true
+  tenant:
+    description: tenant to authenticate to, defaults to supertenant
+    required: false
+    default: supertenant
+  okapi-host:
+    description: hostname for okapi
+    required: true
+  token-name:
+    description: The name of the environment variable to store the token
+    required: false
+    default: OKAPI_TOKEN
+
+runs:
+  using: "composite"
+  steps:
+    - name: Ensure dependencies are installed
+      shell: bash
+      run: |
+        if ! command -v http &> /dev/null; then
+          echo "Installing httpie..."
+          pip install httpie
+        else
+          echo "httpie already installed"
+        fi
+
+        if ! command -v jq &> /dev/null; then
+          echo "Installing jq..."
+          sudo apt-get update && sudo apt-get install -y jq
+        else
+          echo "jq already installed"
+        fi
+
+    - name: Authenticate and export token
+      shell: bash
+      run: |
+
+        OKAPI_HOST=${{ inputs.okapi-host }}
+        OKAPI_USER=${{ inputs.username }}
+        OKAPI_PASSWORD=${{ inputs.password }}
+        OKAPI_TENANT=${{ inputs.tenant }}
+        echo "Authenticating against $OKAPI_HOST..."
+        PAYLOAD=$(jq -n \
+          --arg username "$OKAPI_USER" \
+          --arg password "$OKAPI_PASSWORD" \
+          '{username: $username, password: $password}')
+
+        RESPONSE=$(http POST "$OKAPI_HOST/authn/login" \
+          "x-okapi-tenant:supertenant" <<< "$PAYLOAD")
+
+        TOKEN=$(echo "$RESPONSE" | jq -r '.okapiToken // empty')
+
+        if [[ -z "$TOKEN" ]]; then
+          echo "❌ Failed to extract token. Response:"
+          echo "$RESPONSE"
+          exit 1
+        fi
+
+        echo "✅ Got token: ${TOKEN:0:10}..."
+
+        # Export token to environment under specified name
+        TOKEN_NAME="${{ inputs.token-name }}"
+        echo "Saving token as variable $TOKEN_NAME"
+        echo "$TOKEN_NAME=$TOKEN" >> $GITHUB_ENV

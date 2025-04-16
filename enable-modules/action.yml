@@ -1,0 +1,50 @@
+name: enable modules for tenant
+description: enable modules for tenant
+
+inputs:
+  okapi-host:
+    description: The okapi host url
+    required: true
+  okapi-token:
+    description: The okapi supertenant token
+    required: true
+  tenant-id:
+    description: The id of the tenant to be created
+    required: true
+  enable-file:
+    description: A json file of modules to enable
+    required: true
+  args:
+    description: Arguments to pass to okapi enable call. Defaults to load reference.
+    required: false
+    default: "?tenantParameters=loadReference%3Dtrue"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Ensure dependencies are installed
+      shell: bash
+      run: |
+        if ! command -v http &> /dev/null; then
+          echo "Installing httpie..."
+          pip install httpie
+        else
+          echo "httpie already installed"
+        fi
+
+        if ! command -v jq &> /dev/null; then
+          echo "Installing jq..."
+          sudo apt-get update && sudo apt-get install -y jq
+        else
+          echo "jq already installed"
+        fi
+
+    - name: Post enable JSON
+      shell: bash
+      run: |
+        ENABLE_FILE=${{ inputs.enable-file }}
+        PAYLOAD=$(cat $ENABLE_FILE)    
+
+        echo "$PAYLOAD" | http --timeout 360 POST "${{ inputs.okapi-host }}/_/proxy/tenants/${{ inputs.tenant-id }}/install${{ inputs.args }}" \
+          "x-okapi-tenant:supertenant" \
+          "x-okapi-token:${{ inputs.okapi-token }}"

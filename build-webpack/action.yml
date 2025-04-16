@@ -1,0 +1,48 @@
+name: enable modules for tenant
+description: enable modules for tenant
+
+inputs:
+  okapi:
+    description: The okapi host url
+    required: true
+  tenant:
+    description: The okapi supertenant token
+    required: true
+  reshare-transpile:
+    description: use special reshare transpile invocation
+    required: false
+    default: false
+  node-version:
+    description: version of node to set up
+    required: false
+    default: 18
+
+runs:
+  using: "composite"
+  steps:
+    - name: Ensure dependencies are installed
+      shell: bash
+      run: |
+        if ! command -v http &> /dev/null; then
+          echo "Installing httpie..."
+          pip install httpie
+        else
+          echo "httpie already installed"
+        fi
+
+        if ! command -v jq &> /dev/null; then
+          echo "Installing jq..."
+          sudo apt-get update && sudo apt-get install -y jq
+        else
+          echo "jq already installed"
+        fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }} 
+
+      - name: Install Yarn
+        run: npm install -g yarn
+
+      - name: Add FOLIO registry to yarn
+        run: yarn config set @folio:registry https://repository.folio.org/repository/npm-folio/

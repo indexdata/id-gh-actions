@@ -1,0 +1,76 @@
+iname: Create tenant
+description: create a tenant or do nothing if it already exists
+
+inputs:
+  okapi-host:
+    description: The okapi host url
+    required: true
+  okapi-token:
+    description: The okapi supertenant token
+    required: true
+  tenant-id:
+    description: The id of the tenant to be created
+    required: true
+  tenant-name:
+    description: The name of the tenant to be created
+    required: true
+  tenant-description:
+    description: The description of the tenant to be created
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Ensure dependencies are installed
+      shell: bash
+      run: |
+        if ! command -v http &> /dev/null; then
+          echo "Installing httpie..."
+          pip install httpie
+        else
+          echo "httpie already installed"
+        fi
+
+        if ! command -v jq &> /dev/null; then
+          echo "Installing jq..."
+          sudo apt-get update && sudo apt-get install -y jq
+        else
+          echo "jq already installed"
+        fi
+
+    - name: Post tenant JSON and output response
+      shell: bash
+      run: |
+        PAYLOAD=$(jq -n \
+          --arg id "${{ inputs.tenant-id }}" \
+          --arg name "${{ inputs.tenant-name }}" \
+          --arg description "${{ inputs.tenant-description }}" \
+          '{id: $id, name: $name, description: $description}')
+    
+        OKAPI_URL="${{ inputs.okapi-host }}"
+        OKAPI_TOKEN="${{ inputs.okapi-token }}"
+    
+        # Capture full response and status without exiting early
+        set +e
+        RESPONSE=$(echo "$PAYLOAD" | http POST "$OKAPI_URL/_/proxy/tenants" \
+          "x-okapi-tenant:supertenant" \
+          "x-okapi-token:$OKAPI_TOKEN")
+        STATUS=$?
+        set -e
+    
+        # Save as output
+        RESPONSE_ESCAPED=$(echo "$RESPONSE" | jq -Rs .)
+        echo "response=$RESPONSE_ESCAPED" >> "$GITHUB_OUTPUT"
+    
+        # Handle status
+        if [[ "$STATUS" -eq 0 ]]; then
+          echo "Tenant created successfully (201)"
+        elif echo "$RESPONSE" | grep -q "Duplicate tenant id ${{
+          inputs.tenant-id }}"; then
+          echo "Tenant already exists, continuing"
+        else
+          echo "Tenant creation failed:"
+          echo "$RESPONSE"
+          exit 1
+        fi
+
