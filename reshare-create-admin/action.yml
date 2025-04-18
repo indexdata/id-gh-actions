@@ -140,8 +140,8 @@ runs:
         echo "Response:"
         echo "$RESPONSE"
     
-        # Check if it's a 422 with "User with this username already exists"
-        if echo "$RESPONSE" | jq -e '.errors[]?.message == "User with this username already exists"' > /dev/null; then
+        # Check if any error message contains "already exist" (case-insensitive)
+        if echo "$RESPONSE" | jq -e '.errors[]?.message | test("already exist"; "i")' > /dev/null; then
           echo "User already exists — treating as success."
           exit 0
         else
@@ -154,21 +154,59 @@ runs:
       run: |
         OKAPI_URL="${{ inputs.okapi-host }}"
         TENANT="${{ inputs.tenant-id }}"
-        
-        cat admin_perms.json | \
+    
+        set +e
+        RESPONSE=$(cat admin_perms.json | \
           http --check-status POST "$OKAPI_URL/perms/users" \
-          "x-okapi-tenant:$TENANT"
+          "x-okapi-tenant:$TENANT")
+        STATUS=$?
+        set -e
+    
+        if [[ $STATUS -eq 0 ]]; then
+          echo "Permissions created successfully."
+          exit 0
+        fi
+    
+        echo "Response:"
+        echo "$RESPONSE"
+    
+        if echo "$RESPONSE" | jq -e '.errors[]?.message | test("already exist"; "i")' > /dev/null; then
+          echo "Permissions already exist — treating as success."
+          exit 0
+        else
+          echo "Unexpected error during permissions creation."
+          exit $STATUS
+        fi
 
     - name: Create credentials
       shell: bash
       run: |
         OKAPI_URL="${{ inputs.okapi-host }}"
         TENANT="${{ inputs.tenant-id }}"
-        
-        cat admin_creds.json | \
-          http --check-status POST "$OKAPI_URL/authn/credentials" \
-          "x-okapi-tenant:$TENANT"
     
+        set +e
+        RESPONSE=$(cat admin_creds.json | \
+          http --check-status POST "$OKAPI_URL/authn/credentials" \
+          "x-okapi-tenant:$TENANT")
+        STATUS=$?
+        set -e
+    
+        if [[ $STATUS -eq 0 ]]; then
+          echo "Credentials created successfully."
+          exit 0
+        fi
+    
+        echo "Response:"
+        echo "$RESPONSE"
+    
+        if echo "$RESPONSE" | jq -e '.errors[]?.message | test("already exist"; "i")' > /dev/null; then
+          echo "Credentials already exist — treating as success."
+          exit 0
+        else
+          echo "Unexpected error during credentials creation."
+          exit $STATUS
+        fi 
+
     - name: Enable mod-authtoken
       shell: bash
       run: |
