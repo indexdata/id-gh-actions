@@ -1,0 +1,152 @@
+iname: Create admin user
+description: Creates an admin user from templates
+
+inputs:
+  okapi-host:
+    description: The okapi host url
+    required: true
+  okapi-token:
+    description: The okapi supertenant token
+    required: true
+  tenant-id:
+    description: The id of the tenant to create an admin on
+    required: true
+  admin-password:
+    description: The password of the account to be created
+    required: true
+  user-template:
+    description: User template file
+    required: false
+    default: templates/admin_user.json.j2
+  perms-template:
+    description: User permissions template file
+    required: false
+    default: templates/admin_perms.json.j2
+  creds-template:
+    description: User credentials template file
+    required: false
+    default: templates/admin_creds.json.j2
+
+runs:
+  using: "composite"
+  steps:
+    - name: Ensure dependencies are installed
+      shell: bash
+      run: |
+        if ! command -v http &> /dev/null; then
+          echo "Installing httpie..."
+          pip install httpie
+        else
+          echo "httpie already installed"
+        fi
+
+        if ! command -v jq &> /dev/null; then
+          echo "Installing jq..."
+          sudo apt-get update && sudo apt-get install -y jq
+        else
+          echo "jq already installed"
+        fi
+
+    - name: set admin uuid
+      shell: bash
+      id: gen_admin_uuid
+      run: echo "admin_uuid=$(uuidgen)" >> $GITHUB_OUTPUT
+
+    - name: template user
+      uses: cuchi/jinja2-action@v1.3.0
+      template: "${{ inputs.user-template }}"
+      output_file: admin_user.json
+      variables: |
+        tenantid="${{ inputs.tenant-id }}"
+        admin_uuid="${{ steps.gen_admin_uuid.outputs.uuid }}"
+
+    - name: template perms
+      uses: cuchi/jinja2-action@v1.3.0
+      template: "${{ inputs.perms-template }}"
+      output_file: admin_perms.json
+      variables: |
+        admin_uuid="${{ steps.gen_admin_uuid.outputs.uuid }}"
+
+    - name: template creds
+      uses: cuchi/jinja2-action@v1.3.0
+      template: "${{ inputs.creds-template }}"
+      output_file: admin_perms.json
+      variables: |
+        tenantid="${{ inputs.tenant-id }}"
+        admin_uuid="${{ inputs.admin-password }}"
+
+    - name: Disable mod-authtoken
+      shell: bash
+      run: |
+        OKAPI_URL="${{ inputs.okapi-host }}"
+        OKAPI_TOKEN="${{ inputs.okapi-token }}"
+        TENANT="${{ inputs.tenant-id }}"
+        
+        set +e 
+        RESPONSE=$(echo '[{"id":"mod-authtoken","action":"disable"}]' | \
+          http --check-status POST "$OKAPI_URL/_/proxy/tenants/$TENANT/install" \
+          "x-okapi-tenant:supertenant" \
+          "x-okapi-token:$OKAPI_TOKEN")
+        STATUS=$?
+        set -e
+    
+        # Extract 'id' field from the response
+        MODULE_ID=$(echo "$RESPONSE" | jq -r '.[0].id')
+    
+        # Save it as steps.disable_authtoken.outputs.module_id
+        echo "module_id=$MODULE_ID" >> "$GITHUB_OUTPUT"
+
+    - name: Create user
+      shell: bash
+      run: |
+        OKAPI_URL="${{ inputs.okapi-host }}"
+        TENANT="${{ inputs.tenant-id }}"
+        
+        set +e 
+        RESPONSE=$(cat admin_user.json | \
+          http --check-status POST "$OKAPI_URL/users" \
+          "x-okapi-tenant:$TENANT" \
+        STATUS=$?
+        set -e
+
+    - name: Create permissions
+      shell: bash
+      run: |
+        OKAPI_URL="${{ inputs.okapi-host }}"
+        TENANT="${{ inputs.tenant-id }}"
+        
+        set +e 
+        RESPONSE=$(cat admin_perms.json | \
+          http --check-status POST "$OKAPI_URL/perms/users" \
+          "x-okapi-tenant:$TENANT" \
+        STATUS=$?
+        set -e
+
+    - name: Create credentials
+      shell: bash
+      run: |
+        OKAPI_URL="${{ inputs.okapi-host }}"
+        TENANT="${{ inputs.tenant-id }}"
+        
+        set +e 
+        RESPONSE=$(cat admin_creds.json | \
+          http --check-status POST "$OKAPI_URL/authn/credentials" \
+          "x-okapi-tenant:$TENANT" \
+        STATUS=$?
+        set -e
+    
+    - name: Enable mod-authtoken
+      shell: bash
+      run: |
+        MODULE_VERSION="${{ steps.disable_authtoken.outputs.module_id }}"
+        OKAPI_URL="${{ inputs.okapi-host }}"
+        OKAPI_TOKEN="${{ inputs.okapi-token }}"
+        TENANT="${{ inputs.tenant-id }}"
+        
+        set +e 
+        RESPONSE=$(echo '[{"id":"$MODULE_VERSION","action":"enable"}]' | \
+          http --check-status POST "$OKAPI_URL/_/proxy/tenants/$TENANT/install" \
+          "x-okapi-tenant:supertenant" \
+          "x-okapi-token:$OKAPI_TOKEN")
+        STATUS=$?
+        set -e
