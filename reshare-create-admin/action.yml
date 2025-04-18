@@ -90,7 +90,7 @@ runs:
     
         set +e
         RESPONSE=$(echo '[{"id":"mod-authtoken","action":"disable"}]' | \
-          http --check-status POST "$OKAPI_URL/_/proxy/tenants/$TENANT/install" \
+          http --check-status POST "$OKAPI_URL/_/proxy/tenants/$TENANT/install?depCheck=false" \
           "x-okapi-tenant:supertenant" \
           "x-okapi-token:$OKAPI_TOKEN")
         STATUS=$?
