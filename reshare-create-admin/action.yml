@@ -62,8 +62,8 @@ runs:
         template: "${{ inputs.user-template }}"
         output_file: admin_user.json
         variables: |
-          tenantid="${{ inputs.tenant-id }}"
-          admin_uuid="${{ steps.gen_admin_uuid.outputs.uuid }}"
+          tenantid=${{ inputs.tenant-id }}
+          admin_uuid=${{ steps.gen_admin_uuid.outputs.uuid }}
 
     - name: debug user
       shell: bash
