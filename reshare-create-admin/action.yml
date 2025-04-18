@@ -85,8 +85,10 @@ runs:
         OKAPI_URL="${{ inputs.okapi-host }}"
         OKAPI_TOKEN="${{ inputs.okapi-token }}"
         TENANT="${{ inputs.tenant-id }}"
-        
-        set +e 
+    
+        echo "Disabling mod-authtoken for tenant '$TENANT'..."
+    
+        set +e
         RESPONSE=$(echo '[{"id":"mod-authtoken","action":"disable"}]' | \
           http --check-status POST "$OKAPI_URL/_/proxy/tenants/$TENANT/install" \
           "x-okapi-tenant:supertenant" \
@@ -94,10 +96,15 @@ runs:
         STATUS=$?
         set -e
     
-        # Extract 'id' field from the response
-        MODULE_ID=$(echo "$RESPONSE" | jq -r '.[0].id')
+        echo "Response:"
+        echo "$RESPONSE"
     
-        # Save it as steps.disable_authtoken.outputs.module_id
+        if [[ $STATUS -ne 0 ]]; then
+          echo "Request failed with status $STATUS"
+          exit $STATUS
+        fi
+    
+        MODULE_ID=$(echo "$RESPONSE" | jq -r '.[0].id')
         echo "module_id=$MODULE_ID" >> "$GITHUB_OUTPUT"
 
     - name: Create user
