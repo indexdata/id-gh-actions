@@ -82,10 +82,6 @@ runs:
           tenantid=${{ inputs.tenant-id }}
           admin_password=${{ inputs.admin-password }}
 
-    - name: debug creds
-      shell: bash
-      run: cat admin_creds.json
-
     - name: Disable mod-authtoken
       id: disable_authtoken
       shell: bash
