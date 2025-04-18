@@ -93,7 +93,7 @@ runs:
         PAYLOAD=$(jq -n \
           --arg id "$MODULE_ID" \
           --arg action "disable" \
-          '{id: $id, action: $action}')
+          '[{id: $id, action: $action}]')
 
         echo $PAYLOAD
     
@@ -155,7 +155,7 @@ runs:
         PAYLOAD=$(jq -n \
           --arg id "$MODULE_ID" \
           --arg action "enable" \
-          '{id: $id, action: $action}')
+          '[{id: $id, action: $action}]')
 
         echo $PAYLOAD
         
