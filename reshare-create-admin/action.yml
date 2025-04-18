@@ -94,7 +94,7 @@ runs:
         echo "Disabling mod-authtoken for tenant '$TENANT'..."
     
         set +e
-        RESPONSE=$(echo '[{"id":"mod-authtoken","action":"disable"}]' | \
+        RESPONSE=$(echo "[{\"id\":\"$MODULE_ID\",\"action\":\"disable\"}]" | \
           http --check-status POST "$OKAPI_URL/_/proxy/tenants/$TENANT/install?depCheck=false" \
           "x-okapi-tenant:supertenant" \
           "x-okapi-token:$OKAPI_TOKEN")
