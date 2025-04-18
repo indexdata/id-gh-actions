@@ -124,10 +124,30 @@ runs:
       run: |
         OKAPI_URL="${{ inputs.okapi-host }}"
         TENANT="${{ inputs.tenant-id }}"
-        
-        cat admin_user.json | \
+    
+        set +e
+        RESPONSE=$(cat admin_user.json | \
           http --check-status POST "$OKAPI_URL/users" \
-          "x-okapi-tenant:$TENANT"
+          "x-okapi-tenant:$TENANT")
+        STATUS=$?
+        set -e
+    
+        if [[ $STATUS -eq 0 ]]; then
+          echo "User created successfully."
+          exit 0
+        fi
+    
+        echo "Response:"
+        echo "$RESPONSE"
+    
+        # Check if it's a 422 with "User with this username already exists"
+        if echo "$RESPONSE" | jq -e '.errors[]?.message == "User with this username already exists"' > /dev/null; then
+          echo "User already exists — treating as success."
+          exit 0
+        else
+          echo "Unexpected error."
+          exit $STATUS
+        fi
 
     - name: Create permissions
       shell: bash
