@@ -26,6 +26,10 @@ inputs:
     description: User credentials template file
     required: false
     default: ./templates/admin_creds.json.j2
+  authtoken-version:
+    description: version of mod-authtoken
+    required: false
+    default: mod-authtoken-2.15.2
 
 runs:
   using: "composite"
@@ -85,6 +89,7 @@ runs:
         OKAPI_URL="${{ inputs.okapi-host }}"
         OKAPI_TOKEN="${{ inputs.okapi-token }}"
         TENANT="${{ inputs.tenant-id }}"
+        MODULE_ID="${{ inputs.authtoken-version }}"
     
         echo "Disabling mod-authtoken for tenant '$TENANT'..."
     
@@ -104,9 +109,6 @@ runs:
           exit $STATUS
         fi
     
-        MODULE_ID=$(echo "$RESPONSE" | jq -r '.[0].id')
-        echo "module_id=$MODULE_ID" >> "$GITHUB_OUTPUT"
-
     - name: Create user
       shell: bash
       run: |
@@ -149,13 +151,13 @@ runs:
     - name: Enable mod-authtoken
       shell: bash
       run: |
-        MODULE_VERSION="${{ steps.disable_authtoken.outputs.module_id }}"
+        MODULE_ID="${{ inputs.authtoken-version }}"
         OKAPI_URL="${{ inputs.okapi-host }}"
         OKAPI_TOKEN="${{ inputs.okapi-token }}"
         TENANT="${{ inputs.tenant-id }}"
         
         set +e 
-        RESPONSE=$(echo "[{\"id\":\"$MODULE_VERSION\",\"action\":\"enable\"}]" | \
+        RESPONSE=$(echo "[{\"id\":\"$MODULE_ID\",\"action\":\"enable\"}]" | \
           http --check-status POST "$OKAPI_URL/_/proxy/tenants/$TENANT/install" \
           "x-okapi-tenant:supertenant" \
           "x-okapi-token:$OKAPI_TOKEN")
