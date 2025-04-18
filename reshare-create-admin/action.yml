@@ -54,26 +54,29 @@ runs:
 
     - name: template user
       uses: cuchi/jinja2-action@v1.3.0
-      template: "${{ inputs.user-template }}"
-      output_file: admin_user.json
-      variables: |
-        tenantid="${{ inputs.tenant-id }}"
-        admin_uuid="${{ steps.gen_admin_uuid.outputs.uuid }}"
+      with:
+        template: "${{ inputs.user-template }}"
+        output_file: admin_user.json
+        variables: |
+          tenantid="${{ inputs.tenant-id }}"
+          admin_uuid="${{ steps.gen_admin_uuid.outputs.uuid }}"
 
     - name: template perms
       uses: cuchi/jinja2-action@v1.3.0
-      template: "${{ inputs.perms-template }}"
-      output_file: admin_perms.json
-      variables: |
-        admin_uuid="${{ steps.gen_admin_uuid.outputs.uuid }}"
+      with:
+        template: "${{ inputs.perms-template }}"
+        output_file: admin_perms.json
+        variables: |
+          admin_uuid="${{ steps.gen_admin_uuid.outputs.uuid }}"
 
     - name: template creds
       uses: cuchi/jinja2-action@v1.3.0
-      template: "${{ inputs.creds-template }}"
-      output_file: admin_perms.json
-      variables: |
-        tenantid="${{ inputs.tenant-id }}"
-        admin_uuid="${{ inputs.admin-password }}"
+      with:
+        template: "${{ inputs.creds-template }}"
+        output_file: admin_perms.json
+        variables: |
+          tenantid="${{ inputs.tenant-id }}"
+          admin_uuid="${{ inputs.admin-password }}"
 
     - name: Disable mod-authtoken
       shell: bash
