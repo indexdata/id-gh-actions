@@ -17,15 +17,15 @@ inputs:
   user-template:
     description: User template file
     required: false
-    default: templates/admin_user.json.j2
+    default: ./templates/admin_user.json.j2
   perms-template:
     description: User permissions template file
     required: false
-    default: templates/admin_perms.json.j2
+    default: ./templates/admin_perms.json.j2
   creds-template:
     description: User credentials template file
     required: false
-    default: templates/admin_creds.json.j2
+    default: ./templates/admin_creds.json.j2
 
 runs:
   using: "composite"
