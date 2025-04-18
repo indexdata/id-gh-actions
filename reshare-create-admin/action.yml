@@ -50,7 +50,7 @@ runs:
     - name: set admin uuid
       shell: bash
       id: gen_admin_uuid
-      run: echo "admin_uuid=$(uuidgen)" >> $GITHUB_OUTPUT
+      run: echo "uuid=$(uuidgen)" >> $GITHUB_OUTPUT
 
     - name: template user
       uses: cuchi/jinja2-action@v1.3.0
@@ -73,12 +73,13 @@ runs:
       uses: cuchi/jinja2-action@v1.3.0
       with:
         template: "${{ inputs.creds-template }}"
-        output_file: admin_perms.json
+        output_file: admin_creds.json
         variables: |
           tenantid="${{ inputs.tenant-id }}"
-          admin_uuid="${{ inputs.admin-password }}"
+          admin_password="${{ inputs.admin-password }}"
 
     - name: Disable mod-authtoken
+      id: disable_authtoken
       shell: bash
       run: |
         OKAPI_URL="${{ inputs.okapi-host }}"
@@ -108,7 +109,7 @@ runs:
         set +e 
         RESPONSE=$(cat admin_user.json | \
           http --check-status POST "$OKAPI_URL/users" \
-          "x-okapi-tenant:$TENANT" \
+          "x-okapi-tenant:$TENANT")
         STATUS=$?
         set -e
 
@@ -121,7 +122,7 @@ runs:
         set +e 
         RESPONSE=$(cat admin_perms.json | \
           http --check-status POST "$OKAPI_URL/perms/users" \
-          "x-okapi-tenant:$TENANT" \
+          "x-okapi-tenant:$TENANT")
         STATUS=$?
         set -e
 
@@ -134,7 +135,7 @@ runs:
         set +e 
         RESPONSE=$(cat admin_creds.json | \
           http --check-status POST "$OKAPI_URL/authn/credentials" \
-          "x-okapi-tenant:$TENANT" \
+          "x-okapi-tenant:$TENANT")
         STATUS=$?
         set -e
     
@@ -147,7 +148,7 @@ runs:
         TENANT="${{ inputs.tenant-id }}"
         
         set +e 
-        RESPONSE=$(echo '[{"id":"$MODULE_VERSION","action":"enable"}]' | \
+        RESPONSE=$(echo "[{\"id\":\"$MODULE_VERSION\",\"action\":\"enable\"}]" | \
           http --check-status POST "$OKAPI_URL/_/proxy/tenants/$TENANT/install" \
           "x-okapi-tenant:supertenant" \
           "x-okapi-token:$OKAPI_TOKEN")
