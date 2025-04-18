@@ -65,6 +65,10 @@ runs:
           tenantid="${{ inputs.tenant-id }}"
           admin_uuid="${{ steps.gen_admin_uuid.outputs.uuid }}"
 
+    - name: debug user
+      shell: bash
+      run: cat admin_user.json
+
     - name: template perms
       uses: cuchi/jinja2-action@v1.3.0
       with:
@@ -72,6 +76,10 @@ runs:
         output_file: admin_perms.json
         variables: |
           admin_uuid="${{ steps.gen_admin_uuid.outputs.uuid }}"
+
+    - name: debug perms
+      shell: bash
+      run: cat admin_perms.json
 
     - name: template creds
       uses: cuchi/jinja2-action@v1.3.0
@@ -82,84 +90,88 @@ runs:
           tenantid="${{ inputs.tenant-id }}"
           admin_password="${{ inputs.admin-password }}"
 
-    - name: Disable mod-authtoken
-      id: disable_authtoken
+    - name: debug creds
       shell: bash
-      run: |
-        OKAPI_URL="${{ inputs.okapi-host }}"
-        OKAPI_TOKEN="${{ inputs.okapi-token }}"
-        TENANT="${{ inputs.tenant-id }}"
-        MODULE_ID="${{ inputs.authtoken-version }}"
-        PAYLOAD=$(jq -n \
-          --arg id "$MODULE_ID" \
-          --arg action "disable" \
-          '[{id: $id, action: $action}]')
+      run: cat admin_creds.json
 
-        echo $PAYLOAD
-    
-        echo "Disabling mod-authtoken for tenant '$TENANT'..."
-    
-        set +e
-        RESPONSE=$(echo "$PAYLOAD" | \
-          http --check-status POST "$OKAPI_URL/_/proxy/tenants/$TENANT/install?depCheck=false" \
-          "x-okapi-tenant:supertenant" \
-          "x-okapi-token:$OKAPI_TOKEN")
-        STATUS=$?
-        set -e
-    
-        echo "Response:"
-        echo "$RESPONSE"
-    
-        if [[ $STATUS -ne 0 ]]; then
-          echo "Request failed with status $STATUS"
-          exit $STATUS
-        fi
-    
-    - name: Create user
-      shell: bash
-      run: |
-        OKAPI_URL="${{ inputs.okapi-host }}"
-        TENANT="${{ inputs.tenant-id }}"
-        
-        cat admin_user.json | \
-          http --check-status POST "$OKAPI_URL/users" \
-          "x-okapi-tenant:$TENANT"
-
-    - name: Create permissions
-      shell: bash
-      run: |
-        OKAPI_URL="${{ inputs.okapi-host }}"
-        TENANT="${{ inputs.tenant-id }}"
-        
-        cat admin_perms.json | \
-          http --check-status POST "$OKAPI_URL/perms/users" \
-          "x-okapi-tenant:$TENANT"
-
-    - name: Create credentials
-      shell: bash
-      run: |
-        OKAPI_URL="${{ inputs.okapi-host }}"
-        TENANT="${{ inputs.tenant-id }}"
-        
-        cat admin_creds.json | \
-          http --check-status POST "$OKAPI_URL/authn/credentials" \
-          "x-okapi-tenant:$TENANT"
-    
-    - name: Enable mod-authtoken
-      shell: bash
-      run: |
-        MODULE_ID="${{ inputs.authtoken-version }}"
-        OKAPI_URL="${{ inputs.okapi-host }}"
-        OKAPI_TOKEN="${{ inputs.okapi-token }}"
-        TENANT="${{ inputs.tenant-id }}"
-        PAYLOAD=$(jq -n \
-          --arg id "$MODULE_ID" \
-          --arg action "enable" \
-          '[{id: $id, action: $action}]')
-
-        echo $PAYLOAD
-        
-        echo "$PAYLOAD" | \
-          http --check-status POST "$OKAPI_URL/_/proxy/tenants/$TENANT/install" \
-          "x-okapi-tenant:supertenant" \
-          "x-okapi-token:$OKAPI_TOKEN"
+#    - name: Disable mod-authtoken
+#      id: disable_authtoken
+#      shell: bash
+#      run: |
+#        OKAPI_URL="${{ inputs.okapi-host }}"
+#        OKAPI_TOKEN="${{ inputs.okapi-token }}"
+#        TENANT="${{ inputs.tenant-id }}"
+#        MODULE_ID="${{ inputs.authtoken-version }}"
+#        PAYLOAD=$(jq -n \
+#          --arg id "$MODULE_ID" \
+#          --arg action "disable" \
+#          '[{id: $id, action: $action}]')
+#
+#        echo $PAYLOAD
+#    
+#        echo "Disabling mod-authtoken for tenant '$TENANT'..."
+#    
+#        set +e
+#        RESPONSE=$(echo "$PAYLOAD" | \
+#          http --check-status POST "$OKAPI_URL/_/proxy/tenants/$TENANT/install?depCheck=false" \
+#          "x-okapi-tenant:supertenant" \
+#          "x-okapi-token:$OKAPI_TOKEN")
+#        STATUS=$?
+#        set -e
+#    
+#        echo "Response:"
+#        echo "$RESPONSE"
+#    
+#        if [[ $STATUS -ne 0 ]]; then
+#          echo "Request failed with status $STATUS"
+#          exit $STATUS
+#        fi
+#    
+#    - name: Create user
+#      shell: bash
+#      run: |
+#        OKAPI_URL="${{ inputs.okapi-host }}"
+#        TENANT="${{ inputs.tenant-id }}"
+#        
+#        cat admin_user.json | \
+#          http --check-status POST "$OKAPI_URL/users" \
+#          "x-okapi-tenant:$TENANT"
+#
+#    - name: Create permissions
+#      shell: bash
+#      run: |
+#        OKAPI_URL="${{ inputs.okapi-host }}"
+#        TENANT="${{ inputs.tenant-id }}"
+#        
+#        cat admin_perms.json | \
+#          http --check-status POST "$OKAPI_URL/perms/users" \
+#          "x-okapi-tenant:$TENANT"
+#
+#    - name: Create credentials
+#      shell: bash
+#      run: |
+#        OKAPI_URL="${{ inputs.okapi-host }}"
+#        TENANT="${{ inputs.tenant-id }}"
+#        
+#        cat admin_creds.json | \
+#          http --check-status POST "$OKAPI_URL/authn/credentials" \
+#          "x-okapi-tenant:$TENANT"
+#    
+#    - name: Enable mod-authtoken
+#      shell: bash
+#      run: |
+#        MODULE_ID="${{ inputs.authtoken-version }}"
+#        OKAPI_URL="${{ inputs.okapi-host }}"
+#        OKAPI_TOKEN="${{ inputs.okapi-token }}"
+#        TENANT="${{ inputs.tenant-id }}"
+#        PAYLOAD=$(jq -n \
+#          --arg id "$MODULE_ID" \
+#          --arg action "enable" \
+#          '[{id: $id, action: $action}]')
+#
+#        echo $PAYLOAD
+#        
+#        echo "$PAYLOAD" | \
+#          http --check-status POST "$OKAPI_URL/_/proxy/tenants/$TENANT/install" \
+#          "x-okapi-tenant:supertenant" \
+#          "x-okapi-token:$OKAPI_TOKEN"
