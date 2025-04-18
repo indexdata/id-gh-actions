@@ -115,12 +115,9 @@ runs:
         OKAPI_URL="${{ inputs.okapi-host }}"
         TENANT="${{ inputs.tenant-id }}"
         
-        set +e 
-        RESPONSE=$(cat admin_user.json | \
+        cat admin_user.json | \
           http --check-status POST "$OKAPI_URL/users" \
-          "x-okapi-tenant:$TENANT")
-        STATUS=$?
-        set -e
+          "x-okapi-tenant:$TENANT"
 
     - name: Create permissions
       shell: bash
@@ -128,12 +125,9 @@ runs:
         OKAPI_URL="${{ inputs.okapi-host }}"
         TENANT="${{ inputs.tenant-id }}"
         
-        set +e 
-        RESPONSE=$(cat admin_perms.json | \
+        cat admin_perms.json | \
           http --check-status POST "$OKAPI_URL/perms/users" \
-          "x-okapi-tenant:$TENANT")
-        STATUS=$?
-        set -e
+          "x-okapi-tenant:$TENANT"
 
     - name: Create credentials
       shell: bash
@@ -141,12 +135,9 @@ runs:
         OKAPI_URL="${{ inputs.okapi-host }}"
         TENANT="${{ inputs.tenant-id }}"
         
-        set +e 
-        RESPONSE=$(cat admin_creds.json | \
+        cat admin_creds.json | \
           http --check-status POST "$OKAPI_URL/authn/credentials" \
-          "x-okapi-tenant:$TENANT")
-        STATUS=$?
-        set -e
+          "x-okapi-tenant:$TENANT"
     
     - name: Enable mod-authtoken
       shell: bash
@@ -156,10 +147,7 @@ runs:
         OKAPI_TOKEN="${{ inputs.okapi-token }}"
         TENANT="${{ inputs.tenant-id }}"
         
-        set +e 
-        RESPONSE=$(echo "[{\"id\":\"$MODULE_ID\",\"action\":\"enable\"}]" | \
+        echo "[{\"id\":\"$MODULE_ID\",\"action\":\"enable\"}]" | \
           http --check-status POST "$OKAPI_URL/_/proxy/tenants/$TENANT/install" \
           "x-okapi-tenant:supertenant" \
-          "x-okapi-token:$OKAPI_TOKEN")
-        STATUS=$?
-        set -e
+          "x-okapi-token:$OKAPI_TOKEN"
