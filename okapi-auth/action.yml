@@ -56,7 +56,7 @@ runs:
           '{username: $username, password: $password}')
 
         RESPONSE=$(http POST "$OKAPI_HOST/authn/login" \
-          "x-okapi-tenant:supertenant" <<< "$PAYLOAD")
+          "x-okapi-tenant:$OKAPI_TENANT" <<< "$PAYLOAD")
 
         TOKEN=$(echo "$RESPONSE" | jq -r '.okapiToken // empty')
 
