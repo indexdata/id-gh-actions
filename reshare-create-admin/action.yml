@@ -163,7 +163,9 @@ runs:
  
         RESPONSE=$(http "$USER_URL" \
           "x-okapi-tenant:$TENANT")
-    
+   
+        echo $RESPONSE
+ 
         USER_ID=$(echo "$RESPONSE" | jq -r '.users[0].id')
     
         echo "user_id=$USER_ID" >> $GITHUB_OUTPUT
