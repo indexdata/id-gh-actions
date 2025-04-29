@@ -161,6 +161,9 @@ runs:
   
         echo $USER_URL
  
+        http "$USER_URL" \
+          "x-okapi-tenant:$TENANT"
+
         RESPONSE=$(http "$USER_URL" \
           "x-okapi-tenant:$TENANT")
    
