@@ -156,8 +156,10 @@ runs:
         OKAPI_URL="${{ inputs.okapi-host }}"
         TENANT="${{ inputs.tenant-id }}"
         USERNAME="${{ inputs.tenant-id }}_admin"
-    
-        RESPONSE=$(http --check-status "$OKAPI_URL/users?query=username%3D%3D$USERNAME" \
+   
+        QUERY=$(printf "query=username==%s" "$USERNAME" | jq -s -R -r @uri)
+ 
+        RESPONSE=$(http "$OKAPI_URL/users?$QUERY" \
           "x-okapi-tenant:$TENANT")
     
         USER_ID=$(echo "$RESPONSE" | jq -r '.users[0].id')
