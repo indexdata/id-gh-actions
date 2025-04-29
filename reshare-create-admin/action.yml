@@ -157,9 +157,11 @@ runs:
         TENANT="${{ inputs.tenant-id }}"
         USERNAME="${{ inputs.tenant-id }}_admin"
    
-        QUERY=$(printf "query=username==%s" "$USERNAME" | jq -s -R -r @uri)
+        USER_URL="$OKAPI_URL/users?query=username%3D%3D$USERNAME"
+  
+        echo $USER_URL
  
-        RESPONSE=$(http "$OKAPI_URL/users?$QUERY" \
+        RESPONSE=$(http "$USER_URL" \
           "x-okapi-tenant:$TENANT")
     
         USER_ID=$(echo "$RESPONSE" | jq -r '.users[0].id')
