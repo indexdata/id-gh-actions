@@ -202,7 +202,7 @@ runs:
       run: |
         OKAPI_URL="${{ inputs.okapi-host }}"
         TENANT="${{ inputs.tenant-id }}"
-        PERMS_ID=$(cat updated-perms | jq -r .id)
+        PERMS_ID=$(cat updated-perms.json | jq -r .id)
 
         http PUT $OKAPI_URL/perms/users/$PERMS_ID \
             "x-okapi-tenant:$TENANT" < updated-perms.json
