@@ -33,8 +33,7 @@ inputs:
 
 runs:
   using: "composite"
-  steps:
-    - name: Ensure dependencies are installed
+  steps: - name: Ensure dependencies are installed
       shell: bash
       run: |
         if ! command -v http &> /dev/null; then
@@ -164,9 +163,8 @@ runs:
         
         curl -H "x-okapi-tenant:$TENANT" "$USER_URL"
 
-        RESPONSE=$(http "$USER_URL" \
-          "x-okapi-tenant:$TENANT")
-   
+        RESPONSE=$(curl -s -H "x-okapi-tenant: $TENANT" -H "x-okapi-token: $TOKEN" "$USER_URL")
+
         echo $RESPONSE
  
         USER_ID=$(echo "$RESPONSE" | jq -r '.users[0].id')
