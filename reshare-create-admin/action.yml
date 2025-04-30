@@ -160,9 +160,6 @@ runs:
         USER_URL="$OKAPI_URL/users?query=username%3D%3D$USERNAME"
   
         echo $USER_URL
- 
-        
-        curl -H "x-okapi-tenant:$TENANT" "$USER_URL"
 
         RESPONSE=$(curl -s -H "x-okapi-tenant: $TENANT" "$USER_URL")
 
@@ -171,6 +168,44 @@ runs:
         USER_ID=$(echo "$RESPONSE" | jq -r '.users[0].id')
     
         echo "user_id=$USER_ID" >> $GITHUB_OUTPUT
+
+    - name: get existing permission user uuid if already exists
+      if: steps.create_user.outputs.already_exists == 'true'
+      id: get_existing_perms
+      shell: bash
+      run: |
+        OKAPI_URL="${{ inputs.okapi-host }}"
+        TENANT="${{ inputs.tenant-id }}"
+        ADMIN_UUID=${{ steps.get_existing_user.outputs.user_id }}
+   
+        PERMS_URL="$OKAPI_URL/perms/users?query=userId%3D%3D$ADMIN_UUID"
+        
+        RESPONSE=$(curl -s -H "x-okapi-tenant: $TENANT" "$PERMS_URL")
+
+        echo $RESPONSE > existing-perms.json
+
+    - name: Prepare updated permissions payload
+      shell: bash
+      run: |
+        NEW_PERMS=$(jq '.permissions' templates/admin_perms.json.j2)
+
+        # Extract the first permissionUser from existing-perms.json, remove metadata, and replace permissions
+        jq --argjson perms "$NEW_PERMS" \
+          '.permissionUsers[0] | del(.metadata) | .permissions = $perms' \
+          existing-perms.json > updated-perms.json
+
+        cat updated-perms.json
+
+    - name: Update permissions
+      if: steps.create_user.outputs.already_exists == 'true'
+      shell: bash
+      run: |
+        OKAPI_URL="${{ inputs.okapi-host }}"
+        TENANT="${{ inputs.tenant-id }}"
+        ADMIN_UUID=${{ steps.get_existing_user.outputs.user_id }}
+
+        http PUT $OKAPI_URL/perms/users/$ADMIN_UUID \
+            "x-okapi-tenant:$TENANT" < updated-perms.json
 
     - name: Create permissions
       if: steps.create_user.outputs.already_exists == 'false'
@@ -231,26 +266,6 @@ runs:
           echo "Unexpected error during credentials creation."
           exit $STATUS
         fi 
-
-    - name: template perms update
-      if: steps.create_user.outputs.already_exists == 'true'
-      uses: cuchi/jinja2-action@v1.3.0
-      with:
-        template: "${{ inputs.perms-template }}"
-        output_file: admin_perms_update.json
-        variables: |
-          admin_uuid=${{ steps.get_existing_user.outputs.user_id }}
-
-    - name: Update credentials
-      if: steps.create_user.outputs.already_exists == 'true'
-      shell: bash
-      run: |
-        OKAPI_URL="${{ inputs.okapi-host }}"
-        TENANT="${{ inputs.tenant-id }}"
-        ADMIN_UUID=${{ steps.get_existing_user.outputs.user_id }}
-
-        http PUT $OKAPI_URL/perms/users/$ADMIN_UUID \
-            "x-okapi-tenant:$TENANT" < admin_perms_update.json
 
     - name: Enable mod-authtoken
       shell: bash
