@@ -202,9 +202,9 @@ runs:
       run: |
         OKAPI_URL="${{ inputs.okapi-host }}"
         TENANT="${{ inputs.tenant-id }}"
-        ADMIN_UUID=${{ steps.get_existing_user.outputs.user_id }}
+        PERMS_ID=$(cat updated-perms | jq -r .id)
 
-        http PUT $OKAPI_URL/perms/users/$ADMIN_UUID \
+        http PUT $OKAPI_URL/perms/users/$PERMS_ID \
             "x-okapi-tenant:$TENANT" < updated-perms.json
 
     - name: Create permissions
