@@ -157,7 +157,7 @@ runs:
         TENANT="${{ inputs.tenant-id }}"
         USERNAME="${{ inputs.tenant-id }}_admin"
    
-        USER_URL="$OKAPI_URL/users?query=username%3D%3D$USERNAME"
+        USER_URL="$OKAPI_URL/users?query=username%3D%3Dtesox_admin"
   
         echo $USER_URL
  
