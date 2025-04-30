@@ -157,12 +157,12 @@ runs:
         TENANT="${{ inputs.tenant-id }}"
         USERNAME="${{ inputs.tenant-id }}_admin"
    
-        USER_URL="$OKAPI_URL/users?query=username%3D%3Dtesox_admin"
+        USER_URL="$OKAPI_URL/users?query=username%3D%3D$USERNAME"
   
         echo $USER_URL
  
-        http $USER_URL \
-          "x-okapi-tenant:$TENANT"
+        
+        curl -H "x-okapi-tenant:$TENANT" "$USER_URL"
 
         RESPONSE=$(http "$USER_URL" \
           "x-okapi-tenant:$TENANT")
