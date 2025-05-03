@@ -185,6 +185,7 @@ runs:
         echo $RESPONSE > existing-perms.json
 
     - name: Prepare updated permissions payload
+      if: steps.create_user.outputs.already_exists == 'true'
       shell: bash
       run: |
         NEW_PERMS=$(jq '.permissions' templates/admin_perms.json.j2)
