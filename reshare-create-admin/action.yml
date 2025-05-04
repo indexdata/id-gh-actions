@@ -239,7 +239,6 @@ runs:
         fi
 
     - name: Create credentials
-      if: steps.create_user.outputs.already_exists == 'false'
       shell: bash
       run: |
         OKAPI_URL="${{ inputs.okapi-host }}"
