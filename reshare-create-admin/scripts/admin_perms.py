@@ -116,8 +116,19 @@ def main():
     # always try and create credentials
     template = env.get_template('admin_creds.json.j2')
     data = template.render(tenant_id=tenant_id, admin_password=admin_password)
-    new_creds = okapi_post_noat(okapi_host + '/authn/credentials', tenant_id, data)
-  
+    try:
+        new_creds = okapi_post_noat(url, tenant_id, data)
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 422:
+            error_json = e.response.json()
+            errors = error_json.get("errors", [])
+            if any("already exists" in err.get("message", "").lower() for err in errors):
+                print("Credentials already exist — treating as success.")
+            else:
+                print("422 returned, but message is unexpected.")
+                raise
+        else:
+            raise 
 
 if __name__ == "__main__":
     main()
