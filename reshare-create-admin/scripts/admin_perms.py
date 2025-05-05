@@ -79,7 +79,7 @@ def okapi_get_noat(url, tenant):
 
 def main():
     # setup
-    env = Environment(loader=FileSystemLoader('templates'))
+    env = Environment(loader=FileSystemLoader('../templates'))
     # does an admin user already exist
     admin_id = check_admin_user(okapi_host, tenant_id, admin_user)
     if admin_user:
@@ -87,7 +87,7 @@ def main():
         existing_perms_id = check_admin_perms(okapi_host, tenant_id, admin_id)
         if existing_perms_id is False:
             # there are no permissions, create them
-            template = env.get_template('../templates/admin_perms.json.j2')
+            template = env.get_template('admin_perms.json.j2')
             perms_id = new_id = str(uuid.uuid4())
             data = template.render(admin_id=admin_id, perms_id=perms_id)
             new_perms = okapi_post_noat(okapi_host + '/perms/users', tenant_id, data)
@@ -101,18 +101,18 @@ def main():
     else: 
         # there is no admin user, create one
         admin_id = new_id = str(uuid.uuid4())
-        template = env.get_template('../templates/admin_user.json.j2')
+        template = env.get_template('admin_user.json.j2')
         data = template.render(admin_id=admin_id, tenant_id=tenant_id)
         new_user = okapi_post_noat(okapi_host + '/users', tenant_id, data)
 
         # now perms
-        template = env.get_template('../templates/admin_perms.json.j2')
+        template = env.get_template('admin_perms.json.j2')
         perms_id = new_id = str(uuid.uuid4())
         data = template.render(admin_id=admin_id, perms_id=perms_id)
         new_perms = okapi_post_noat(okapi_host + '/perms/users', tenant_id, data)
 
     # always try and create credentials
-    template = env.get_template('../templates/admin_creds.json.j2')
+    template = env.get_template('admin_creds.json.j2')
     data = template.render(tenant_id=tenant_id, admin_password=admin_password)
     new_creds = okapi_post_noat(okapi_host + '/authn/credentials', tenant_id, data)
   
