@@ -84,7 +84,7 @@ def main():
     env = Environment(loader=FileSystemLoader(template_dir))
     # does an admin user already exist
     admin_id = check_admin_user(okapi_host, tenant_id, admin_user)
-    print(str(admin_id)
+    print(str(admin_id))
     if admin_user:
         # there is already an admin user, make sure its up to date
         existing_perms_id = check_admin_perms(okapi_host, tenant_id, admin_id)
