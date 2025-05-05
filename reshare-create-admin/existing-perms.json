@@ -1,6 +1,0 @@
-{
-  "permissionUsers": [
-{"id":"3955d0eb-8783-453f-8ae5-eb0122617940","userId":"15a65190-1f3e-5dd7-bbd7-a203d6e85a89","permissions":["perms.users.assign.immutable","perms.users.assign.mutable","perms.users.assign.okapi","perms.all","okapi.all","okapi.proxy.pull.modules.post","login.all","users.all","auth.signtoken","auth.signrefreshtoken"],"metadata":{"createdDate":"2025-04-22T12:50:29.159+00:00","updatedDate":"2025-04-22T12:50:29.159+00:00"}}],
-  "totalRecords": 1,
-  "resultInfo": {"totalRecords":1,"facets":[],"diagnostics":[]}
-}
