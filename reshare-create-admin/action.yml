@@ -210,7 +210,6 @@ runs:
             "x-okapi-tenant:$TENANT" < updated-perms.json
 
     - name: Create permissions
-      if: steps.create_user.outputs.already_exists == 'false'
       shell: bash
       run: |
         OKAPI_URL="${{ inputs.okapi-host }}"
