@@ -96,6 +96,7 @@ def main():
         else:
             # there are existing perms, update them
             perms_id = existing_perms_id
+            template = env.get_template('admin_perms.json.j2')
             data = template.render(admin_id=admin_id, perms_id=perms_id)
             new_perms = okapi_put_noat(okapi_host + '/perms/users/' + perms_id, tenant_id, data)
 
