@@ -55,7 +55,7 @@ def okapi_post_noat(url, tenant, data):
 
     response = requests.post(url, headers=headers, data=data)
     response.raise_for_status()
-    return response.json()
+    return response
 
 def okapi_put_noat(url, tenant, data):
     headers = {
@@ -65,7 +65,7 @@ def okapi_put_noat(url, tenant, data):
 
     response = requests.put(url, headers=headers, data=data)
     response.raise_for_status()
-    return response.json()
+    return response
 
 def okapi_get_noat(url, tenant):
     headers = {
@@ -75,7 +75,7 @@ def okapi_get_noat(url, tenant):
 
     response = requests.put(url, headers=headers, data=data)
     response.raise_for_status()
-    return response.json()
+    return response
 
 def main():
     # setup
