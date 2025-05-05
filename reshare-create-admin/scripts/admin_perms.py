@@ -79,7 +79,9 @@ def okapi_get_noat(url, tenant):
 
 def main():
     # setup
-    env = Environment(loader=FileSystemLoader('../templates'))
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    template_dir = os.path.join(script_dir, '..', 'templates')
+    env = Environment(loader=FileSystemLoader(template_dir))
     # does an admin user already exist
     admin_id = check_admin_user(okapi_host, tenant_id, admin_user)
     if admin_user:
