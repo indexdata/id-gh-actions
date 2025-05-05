@@ -183,6 +183,7 @@ runs:
         RESPONSE=$(curl -s -H "x-okapi-tenant: $TENANT" "$PERMS_URL")
 
         echo $RESPONSE > existing-perms.json
+        cat existing-perms.json
 
     - name: Prepare updated permissions payload
       if: steps.create_user.outputs.already_exists == 'true'
