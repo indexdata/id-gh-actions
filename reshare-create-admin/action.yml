@@ -51,37 +51,6 @@ runs:
           echo "jq already installed"
         fi
 
-    - name: set admin uuid
-      shell: bash
-      id: gen_admin_uuid
-      run: echo "uuid=$(uuidgen)" >> $GITHUB_OUTPUT
-
-    - name: template user
-      uses: cuchi/jinja2-action@v1.3.0
-      with:
-        template: "${{ inputs.user-template }}"
-        output_file: admin_user.json
-        variables: |
-          tenantid=${{ inputs.tenant-id }}
-          admin_uuid=${{ steps.gen_admin_uuid.outputs.uuid }}
-
-    - name: template perms
-      uses: cuchi/jinja2-action@v1.3.0
-      with:
-        template: "${{ inputs.perms-template }}"
-        output_file: admin_perms.json
-        variables: |
-          admin_uuid=${{ steps.gen_admin_uuid.outputs.uuid }}
-
-    - name: template creds
-      uses: cuchi/jinja2-action@v1.3.0
-      with:
-        template: "${{ inputs.creds-template }}"
-        output_file: admin_creds.json
-        variables: |
-          tenantid=${{ inputs.tenant-id }}
-          admin_password=${{ inputs.admin-password }}
-
     - name: Disable mod-authtoken
       id: disable_authtoken
       shell: bash
@@ -114,158 +83,16 @@ runs:
           echo "Request failed with status $STATUS"
           exit $STATUS
         fi
-    
-    - name: Create user
-      id: create_user
+
+    - name: run admin creation script
       shell: bash
+      env:
+        OKAPI_HOST: ${{ inputs.okapi-host }}
+        OKAPI_TOKEN: ${{ inputs.okapi-token }}
+        TENANT_ID: ${{ inputs.tenant-id }}
+        ADMIN_PASSWORD: ${{ inputs.admin-password }}
       run: |
-        OKAPI_URL="${{ inputs.okapi-host }}"
-        TENANT="${{ inputs.tenant-id }}"
-    
-        set +e
-        RESPONSE=$(cat admin_user.json | \
-          http --check-status POST "$OKAPI_URL/users" \
-          "x-okapi-tenant:$TENANT")
-        STATUS=$?
-        set -e
-    
-        if [[ $STATUS -eq 0 ]]; then
-          echo "User created successfully."
-          echo "already_exists=false" >> $GITHUB_OUTPUT
-          exit 0
-        fi
-    
-        echo "Response:"
-        echo "$RESPONSE"
-    
-        # Check if any error message contains "already exist" (case-insensitive)
-        if echo "$RESPONSE" | jq -e '.errors[]?.message | test("already exist"; "i")' > /dev/null; then
-          echo "User already exists — treating as success."
-          echo "already_exists=true" >> $GITHUB_OUTPUT
-          exit 0
-        else
-          echo "Unexpected error."
-          exit $STATUS
-        fi
-
-    - name: get existing user uuid if already exists
-      if: steps.create_user.outputs.already_exists == 'true'
-      id: get_existing_user
-      shell: bash
-      run: |
-        OKAPI_URL="${{ inputs.okapi-host }}"
-        TENANT="${{ inputs.tenant-id }}"
-        USERNAME="${{ inputs.tenant-id }}_admin"
-   
-        USER_URL="$OKAPI_URL/users?query=username%3D%3D$USERNAME"
-  
-        echo $USER_URL
-
-        RESPONSE=$(curl -s -H "x-okapi-tenant: $TENANT" "$USER_URL")
-
-        echo $RESPONSE
- 
-        USER_ID=$(echo "$RESPONSE" | jq -r '.users[0].id')
-    
-        echo "user_id=$USER_ID" >> $GITHUB_OUTPUT
-
-    - name: get existing permission user uuid if already exists
-      if: steps.create_user.outputs.already_exists == 'true'
-      id: get_existing_perms
-      shell: bash
-      run: |
-        OKAPI_URL="${{ inputs.okapi-host }}"
-        TENANT="${{ inputs.tenant-id }}"
-        ADMIN_UUID=${{ steps.get_existing_user.outputs.user_id }}
-   
-        PERMS_URL="$OKAPI_URL/perms/users?query=userId%3D%3D$ADMIN_UUID"
-        
-        RESPONSE=$(curl -s -H "x-okapi-tenant: $TENANT" "$PERMS_URL")
-
-        echo $RESPONSE > existing-perms.json
-        head existing-perms.json
-
-    - name: Prepare updated permissions payload
-      if: steps.create_user.outputs.already_exists == 'true'
-      shell: bash
-      run: |
-        NEW_PERMS=$(jq '.permissions' templates/admin_perms.json.j2)
-
-        # Extract the first permissionUser from existing-perms.json, remove metadata, and replace permissions
-        jq --argjson perms "$NEW_PERMS" \
-          '.permissionUsers[0] | del(.metadata) | .permissions = $perms' \
-          existing-perms.json > updated-perms.json
-
-        cat updated-perms.json
-
-    - name: Update permissions
-      if: steps.create_user.outputs.already_exists == 'true'
-      shell: bash
-      run: |
-        OKAPI_URL="${{ inputs.okapi-host }}"
-        TENANT="${{ inputs.tenant-id }}"
-        PERMS_ID=$(cat updated-perms.json | jq -r .id)
-
-        http PUT $OKAPI_URL/perms/users/$PERMS_ID \
-            "x-okapi-tenant:$TENANT" < updated-perms.json
-
-    - name: Create permissions
-      shell: bash
-      run: |
-        OKAPI_URL="${{ inputs.okapi-host }}"
-        TENANT="${{ inputs.tenant-id }}"
-    
-        set +e
-        RESPONSE=$(cat admin_perms.json | \
-          http --check-status POST "$OKAPI_URL/perms/users" \
-          "x-okapi-tenant:$TENANT")
-        STATUS=$?
-        set -e
-    
-        if [[ $STATUS -eq 0 ]]; then
-          echo "Permissions created successfully."
-          exit 0
-        fi
-    
-        echo "Response:"
-        echo "$RESPONSE"
-    
-        if echo "$RESPONSE" | jq -e '.errors[]?.message | test("already exist"; "i")' > /dev/null; then
-          echo "Permissions already exist — treating as success."
-          exit 0
-        else
-          echo "Unexpected error during permissions creation."
-          exit $STATUS
-        fi
-
-    - name: Create credentials
-      shell: bash
-      run: |
-        OKAPI_URL="${{ inputs.okapi-host }}"
-        TENANT="${{ inputs.tenant-id }}"
-    
-        set +e
-        RESPONSE=$(cat admin_creds.json | \
-          http --check-status POST "$OKAPI_URL/authn/credentials" \
-          "x-okapi-tenant:$TENANT")
-        STATUS=$?
-        set -e
-    
-        if [[ $STATUS -eq 0 ]]; then
-          echo "Credentials created successfully."
-          exit 0
-        fi
-    
-        echo "Response:"
-        echo "$RESPONSE"
-    
-        if echo "$RESPONSE" | jq -e '.errors[]?.message | test("already exist"; "i")' > /dev/null; then
-          echo "Credentials already exist — treating as success."
-          exit 0
-        else
-          echo "Unexpected error during credentials creation."
-          exit $STATUS
-        fi 
+        python3 "${{ github.action_path }}/scripts/admin_perms.py"
 
     - name: Enable mod-authtoken
       shell: bash
