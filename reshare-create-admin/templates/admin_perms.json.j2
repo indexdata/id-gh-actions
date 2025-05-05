@@ -1,6 +1,6 @@
 {
-  "userId": "{{ admin_id }}",
-  "id": "{{ perms_id }}",
+  "userId": "{{ admin_id }}"{% if perms_id %},
+  "id": "{{ perms_id }}"{% endif %},
   "permissions": [
     "auth.signrefreshtoken",
     "auth.signtoken",

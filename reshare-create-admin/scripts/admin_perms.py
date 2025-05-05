@@ -90,8 +90,7 @@ def main():
         if existing_perms_id is False:
             # there are no permissions, create them
             template = env.get_template('admin_perms.json.j2')
-            perms_id = new_id = str(uuid.uuid4())
-            data = template.render(admin_id=admin_id, perms_id=perms_id)
+            data = template.render(admin_id=admin_id)
             new_perms = okapi_post_noat(okapi_host + '/perms/users', tenant_id, data)
         else:
             # there are existing perms, update them
