@@ -118,7 +118,7 @@ def main():
     template = env.get_template('admin_creds.json.j2')
     data = template.render(tenant_id=tenant_id, admin_password=admin_password)
     try:
-        new_creds = okapi_post_noat(url, tenant_id, data)
+        new_creds = okapi_post_noat(okapi_host + '/authn/credentials', tenant_id, data)
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 422:
             error_json = e.response.json()
