@@ -85,7 +85,7 @@ def main():
     # does an admin user already exist
     admin_id = check_admin_user(okapi_host, tenant_id, admin_user)
     print(str(admin_id))
-    if admin_user:
+    if admin_id:
         # there is already an admin user, make sure its up to date
         existing_perms_id = check_admin_perms(okapi_host, tenant_id, admin_id)
         if existing_perms_id is False:
