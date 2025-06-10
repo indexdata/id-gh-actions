@@ -1,0 +1,52 @@
+name: create or update directory
+description: updates illmock directory
+
+inputs:
+  namespace:
+    description: the namespace to deploy the directory config to
+    required: true
+  directory-source:
+    description: A url resolving directory informatoin
+    required: false
+    default: "https://s3.amazonaws.com/indexdata-docs/trove-tenant-details/directory.json"
+  deploy-key:
+    description: A Github SSH deploy key
+    required: true
+  user:
+    description: username to use for git commits
+    required: false
+    default: "github-actions-platform-trove"
+  destination:
+    description: path to directory file in eks git repo
+    required: true
+  okapi-url:
+    description: URL for okapi to resolve services to
+    required: true
+runs:
+  using: "composite"
+  steps: 
+    - name: Setup SSH for deploy key
+      shell: bash
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ inputs.deploy-key }}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+        ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+    - name: get destination eks repository
+      run: |
+        git config --global user.name "{{ inputs.user }}"
+        git config --global user.email "{{ inputs.user }}@indexdata.com"
+
+        namespace="${{ inputs.namespace }}"
+        destination="${namespace}//${tenant_id}-${environment}-stripes-ingress.yaml"
+
+        git clone git@github.com:indexdata/eks-ap-southeast-2-1.git
+        mkdir -p eks-ap-southeast-2-1/${namespace}/stripes
+        cp stripes-ingress.yaml "eks-ap-southeast-2-1/$destination"
+
+        cd eks-ap-southeast-2-1
+        git add "$destination"
+        git status
+        # commit, or echo so it returns exit code 0
+        git commit -m "Add test ingress file" && git push || echo "Nothing to commit."
